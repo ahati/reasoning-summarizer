@@ -24,7 +24,7 @@ go.work
 go.work.sum
 
 # Go binary
-reasoning-summarizer
+/reasoning-summarizer
 
 # ============================================
 # C/C++ build artifacts

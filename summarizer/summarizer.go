@@ -27,7 +27,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"reasoning-summarizer/llama"
+	"github.com/ahati/reasoning-summarizer/llama"
 )
 
 // Config holds the configuration for a Summarizer.
