@@ -1,0 +1,218 @@
+# ============================================
+# Models - download during use, not in repo
+# ============================================
+models/
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# ============================================
+# Go build artifacts
+# ============================================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Go binary
+reasoning-summarizer
+
+# ============================================
+# C/C++ build artifacts
+# ============================================
+*.o
+*.obj
+*.a
+*.lib
+*.slo
+*.lo
+*.ko
+*.obj
+*.elf
+*.ilk
+*.map
+*.exp
+*.gch
+*.pch
+*.so.*
+*.dylib
+*.dll
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# ============================================
+# CMake build artifacts
+# ============================================
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+build/
+Build/
+out/
+
+# ============================================
+# llama.cpp specific
+# ============================================
+llama.cpp/build/
+*.ggml
+
+# ============================================
+# IDE and Editor files
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (GoLand, IntelliJ)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim
+*.swp
+*.swo
+*.swn
+*~
+.*.swp
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# TextMate
+*.tmproj
+*.tmproject
+tmtags
+
+# ============================================
+# Operating System files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Logs and Databases
+# ============================================
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# ============================================
+# Archives
+# ============================================
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+*.tgz
+*.tbz2
+*.rar
+*.7z
+*.dmg
+*.iso
+
+# ============================================
+# Secrets and Environment
+# ============================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+secrets/
+secrets.*
+credentials.*
+token*
+
+# ============================================
+# Test and Coverage
+# ============================================
+coverage.txt
+coverage.html
+coverage.out
+*.coverprofile
+*.test
+*.prof
+
+# ============================================
+# Documentation builds
+# ============================================
+docs/_build/
+site/
+
+# ============================================
+# Package Manager caches
+# ============================================
+node_modules/
+vendor/
+Godeps/
+.npm/
+.pip/
+.cache/
+
+# ============================================
+# Temporary files
+# ============================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
