@@ -155,15 +155,29 @@ func (s *Summarizer) Summarize(ctx context.Context, reasoning string) (Summary, 
 		truncated = true
 	}
 
-	// Prompt uses hard constraints based on research: sentence limits work better than word limits.
-	// Uses a direct instruction format that small models can follow more reliably.
-	prompt := fmt.Sprintf(
-		`<|im_start|>system
-Summarize reasoning in exactly ONE short sentence. Capture the main point only.<|im_end|>
+	// Prompt uses aggressive compression.
+	// Qwen 3.5 is a reasoning model that outputs thinking tokens.
+	// We request JSON format to extract the summary reliably.
+	var prompt string
+	if strings.Contains(strings.ToLower(s.cfg.ModelPath), "tinyllama") || strings.Contains(strings.ToLower(s.cfg.ModelPath), "llama") {
+		// Llama-2 format for TinyLlama
+		prompt = fmt.Sprintf(
+			`<>
+Key words from this text (max 5 words):
+%s
+Key words:</s>
+`, reasoning)
+	} else {
+		// ChatML format for Qwen - request JSON output
+		prompt = fmt.Sprintf(
+			`<|im_start|>system
+Extract the main point in under 10 words.
+Output as JSON: {"summary": "your summary here"}<|im_end|>
 <|im_start|>user
 %s<|im_end|>
 <|im_start|>assistant
-Summary:`, reasoning)
+{"summary": "`, reasoning)
+	}
 
 	tokens, err := s.ctx.Tokenize(prompt)
 	if err != nil {
@@ -208,36 +222,78 @@ Summary:`, reasoning)
 
 // cleanSummary removes thinking tokens and artifacts from model output.
 func cleanSummary(s string) string {
-	// Remove stop tokens that might leak into output
-	s = strings.Split(s, "<|im_end|")[0]
-	s = strings.Split(s, "<|im_start|")[0]
-	s = strings.Split(s, "</s>")[0]
+	// Qwen 3.5 reasoning models output thinking in this format:
+	// ང thinking_content ང actual_response
+	// The thinking token is Unicode U+0F04 (Tibetan mark initial form)
 
-	// Remove leading "Summary:" if model echoes it
-	s = strings.TrimPrefix(s, "Summary:")
-	s = strings.TrimPrefix(s, "Summary: ")
+	// Count occurrences of thinking token
+	thinkingToken := "<tool_call>"
+	count := strings.Count(s, thinkingToken)
 
-	// Remove thinking tokens (some models emit these)
-	s = strings.ReplaceAll(s, "༄", "")
-	s = strings.ReplaceAll(s, " ADCB", "")
-	s = strings.ReplaceAll(s, "idado", "")
+	if count >= 2 {
+		// Normal case: thinking_content ང actual_content
+		// Find the position after the second thinking token
+		idx := strings.Index(s, thinkingToken)
+		rest := s[idx+len(thinkingToken):]
+		idx2 := strings.Index(rest, thinkingToken)
+		if idx2 >= 0 {
+			s = strings.TrimSpace(rest[idx2+len(thinkingToken):])
+		}
+	} else if count == 1 {
+		// Only one thinking token - check what comes after
+		idx := strings.Index(s, thinkingToken)
+		after := strings.TrimSpace(s[idx+len(thinkingToken):])
 
-	// Remove common model artifacts at the start
-	s = strings.TrimPrefix(s, " Auditor General")
-	s = strings.TrimPrefix(s, " Auditor General\n\n")
+		// If it starts with thinking process markers, the model failed
+		if strings.HasPrefix(after, "Thinking Process") ||
+			strings.HasPrefix(after, "Analyze") ||
+			strings.HasPrefix(after, "**Task") ||
+			strings.HasPrefix(after, "* Task") {
+			// Return empty to trigger fallback
+			return ""
+		}
+		s = after
+	}
 
-	// Remove leading/trailing newlines and whitespace
-	s = strings.TrimSpace(s)
-
-	// If the output starts with newlines (from thinking blocks), skip to actual content
-	if idx := strings.Index(s, "\n\n"); idx >= 0 && idx < 30 {
-		rest := strings.TrimSpace(s[idx+2:])
-		if rest != "" {
-			s = rest
+	// Extract summary from JSON if present
+	// Look for {"summary": "..."} or just the value after {"summary": "
+	if strings.Contains(s, `"summary"`) {
+		// Find the start of the summary value
+		if idx := strings.Index(s, `"summary": "`); idx >= 0 {
+			start := idx + len(`"summary": "`)
+			// Find the end quote
+			if endIdx := strings.Index(s[start:], `"`); endIdx > 0 {
+				s = s[start : start+endIdx]
+			} else if endIdx := strings.Index(s[start:], `"}`); endIdx > 0 {
+				s = s[start : start+endIdx]
+			}
 		}
 	}
 
-	return s
+	// Remove stop tokens
+	s = strings.Split(s, "<|im_end|")[0]
+	s = strings.Split(s, "<|im_start|")[0]
+	s = strings.Split(s, "</s>")[0]
+	s = strings.Split(s, `"}`)[0]
+	s = strings.Split(s, `"}`)[0]
+
+	// Remove leading labels
+	s = strings.TrimPrefix(s, "Summary:")
+	s = strings.TrimPrefix(s, "Summary: ")
+
+	// Remove markdown bold
+	s = strings.ReplaceAll(s, "**", "")
+
+	// Remove newlines
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", "")
+
+	// Collapse multiple spaces
+	for strings.Contains(s, "  ") {
+		s = strings.ReplaceAll(s, "  ", " ")
+	}
+
+	return strings.TrimSpace(s)
 }
 
 func truncateMiddle(s string, maxLen int) string {

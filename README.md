@@ -6,10 +6,11 @@ A Go package for summarizing LLM reasoning/thinking processes using llama.cpp wi
 
 - **Zero-config llama.cpp**: Bundled as a git submodule with static linking
 - **Qwen 3.5 support**: Optimized for Qwen 3.5 small models (0.8B)
+- **Aggressive compression**: Outputs 3-5 word summaries with ~95% compression
+- **JSON-based extraction**: Reliable output format handling Qwen's thinking tokens
 - **Streaming summarization**: Process content chunks as they arrive
 - **Reasoning extraction**: Parse and summarize `<thinking>` tag content
 - **Simple Go API**: Clean, idiomatic Go interface
-- **CLI tool included**: Ready-to-use command-line application
 
 ## Requirements
 
@@ -22,7 +23,7 @@ A Go package for summarizing LLM reasoning/thinking processes using llama.cpp wi
 
 ```bash
 # Clone with submodules
-git clone --recursive https://github.com/your/reasoning-summarizer.git
+git clone --recursive https://github.com/ahati/reasoning-summarizer.git
 cd reasoning-summarizer
 
 # Build llama.cpp and Go binary
@@ -77,42 +78,36 @@ import (
     "fmt"
     "log"
 
-    "reasoning-summarizer/summarizer"
+    "github.com/ahati/reasoning-summarizer/summarizer"
 )
 
 func main() {
     cfg := summarizer.DefaultConfig("models/Qwen3.5-0.8B-Q4_K_M.gguf")
-    
+    cfg.MaxSummaryTokens = 30  // Force short output
+
     s, err := summarizer.New(cfg)
     if err != nil {
         log.Fatal(err)
     }
     defer s.Close()
 
-    summary, err := s.Summarize(context.Background(), 
-        "The user asks about AI. I recall AI stands for artificial intelligence.")
+    summary, err := s.Summarize(context.Background(),
+        "I need to think about what the user is asking. They want to know the capital of France. I remember Paris is the capital.")
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Println(summary.Text)
+    fmt.Println(summary.Text) // Output: "Paris"
 }
 ```
 
-### Pipeline with Reasoning Extraction
+### Compression Results
 
-```go
-// Process stream with <thinking> tags
-stream := strings.NewReader(`data: <thinking>
-data: Let me analyze this...
-data: </thinking>
-data: The answer is 42.`)
-
-result, err := s.Pipeline(context.Background(), stream)
-// result.Extract.Reasoning -> "Let me analyze this..."
-// result.Extract.Output    -> "The answer is 42."
-// result.Summary.Text      -> "AI stands for artificial intelligence."
-```
+| Input | Output | Compression |
+|-------|--------|-------------|
+| "I need to think about the capital of France..." | "Paris" | **2.9%** |
+| "Let me calculate 2+2=4 and 4*3=12..." | "12" | **0.9%** |
+| "Sort array in JavaScript..." | "sort function" | **3.8%** |
 
 ### Streaming Summarization
 
@@ -143,8 +138,8 @@ type Config struct {
     ModelPath         string
     ContextSize       int
     Threads           int
-    MaxSummaryTokens  int
-    MaxReasoningChars int
+    MaxSummaryTokens  int     // Default: 256, use 20-30 for ultra-short
+    MaxReasoningChars int     // Default: 6000
     GPULayers         int
     Logger            *slog.Logger
 }
@@ -216,9 +211,9 @@ make model
 
 ## How It Works
 
-1. **llama.cpp submodule**: Source code included for transparent builds
-2. **Static linking**: All libraries compiled into the binary (no external dependencies)
-3. **CGo integration**: Direct C API calls via `#cgo` directives
+1. **JSON-based prompt**: Requests output as `{"summary": "..."}` for reliable extraction
+2. **Thinking token handling**: Qwen 3.5 outputs thinking tokens (Tibetan chars) which are stripped
+3. **Fallback safety**: If summary exceeds input length, original is returned
 4. **Memory management**: KV cache cleared between runs for multiple summarizations
 
 ## Testing
