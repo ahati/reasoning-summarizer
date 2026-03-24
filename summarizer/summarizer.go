@@ -155,9 +155,15 @@ func (s *Summarizer) Summarize(ctx context.Context, reasoning string) (Summary, 
 		truncated = true
 	}
 
+	// Prompt uses hard constraints based on research: sentence limits work better than word limits.
+	// Uses a direct instruction format that small models can follow more reliably.
 	prompt := fmt.Sprintf(
-		"<|im_start|>system\nYou are a concise summarizer. Summarize in 2-3 sentences.<|im_end|>\n"+
-			"<|im_start|>user\nSummarize: %s<|im_end|>\n<|im_start|>assistant\n", reasoning)
+		`<|im_start|>system
+Summarize reasoning in exactly ONE short sentence. Capture the main point only.<|im_end|>
+<|im_start|>user
+%s<|im_end|>
+<|im_start|>assistant
+Summary:`, reasoning)
 
 	tokens, err := s.ctx.Tokenize(prompt)
 	if err != nil {
@@ -191,8 +197,47 @@ func (s *Summarizer) Summarize(ctx context.Context, reasoning string) (Summary, 
 	}
 
 	latency := time.Since(start)
-	s.log.Debug("inference complete", "latency", latency, "chars", output.Len())
-	return Summary{Text: strings.TrimSpace(output.String()), Latency: latency, Truncated: truncated}, nil
+	rawOutput := strings.TrimSpace(output.String())
+
+	// Clean up thinking tokens and artifacts that some models emit
+	cleanedOutput := cleanSummary(rawOutput)
+
+	s.log.Debug("inference complete", "latency", latency, "chars", len(cleanedOutput), "raw_chars", len(rawOutput))
+	return Summary{Text: cleanedOutput, Latency: latency, Truncated: truncated}, nil
+}
+
+// cleanSummary removes thinking tokens and artifacts from model output.
+func cleanSummary(s string) string {
+	// Remove stop tokens that might leak into output
+	s = strings.Split(s, "<|im_end|")[0]
+	s = strings.Split(s, "<|im_start|")[0]
+	s = strings.Split(s, "</s>")[0]
+
+	// Remove leading "Summary:" if model echoes it
+	s = strings.TrimPrefix(s, "Summary:")
+	s = strings.TrimPrefix(s, "Summary: ")
+
+	// Remove thinking tokens (some models emit these)
+	s = strings.ReplaceAll(s, "༄", "")
+	s = strings.ReplaceAll(s, " ADCB", "")
+	s = strings.ReplaceAll(s, "idado", "")
+
+	// Remove common model artifacts at the start
+	s = strings.TrimPrefix(s, " Auditor General")
+	s = strings.TrimPrefix(s, " Auditor General\n\n")
+
+	// Remove leading/trailing newlines and whitespace
+	s = strings.TrimSpace(s)
+
+	// If the output starts with newlines (from thinking blocks), skip to actual content
+	if idx := strings.Index(s, "\n\n"); idx >= 0 && idx < 30 {
+		rest := strings.TrimSpace(s[idx+2:])
+		if rest != "" {
+			s = rest
+		}
+	}
+
+	return s
 }
 
 func truncateMiddle(s string, maxLen int) string {
