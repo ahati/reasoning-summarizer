@@ -67,15 +67,6 @@ Build/
 out/
 
 # ============================================
-# llama.cpp specific (fetched by go:generate)
-# ============================================
-# Keep the stub header, ignore fetched source and build artifacts
-llama.cpp/*
-!llama.cpp/include/
-!llama.cpp/include/llama.h
-*.ggml
-
-# ============================================
 # IDE and Editor files
 # ============================================
 # VSCode

@@ -1,16 +1,27 @@
 // Package llama provides CGo bindings to llama.cpp.
 //
-// Before building, you must run go:generate to fetch and build llama.cpp:
+// SETUP INSTRUCTIONS:
 //
-//	CGO_ENABLED=1 go generate github.com/ahati/reasoning-summarizer/llama
+// 1. Clone and build llama.cpp:
 //
-// This will clone llama.cpp from GitHub and build the static libraries.
+//	git clone --depth 1 --branch b8508 https://github.com/ggml-org/llama.cpp.git
+//	cd llama.cpp && mkdir build && cd build
+//	cmake .. -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF
+//	make -j$(nproc) llama ggml ggml-base ggml-cpu
+//
+// 2. Set LLAMA_CPP_PATH environment variable:
+//
+//	export LLAMA_CPP_PATH=/path/to/llama.cpp
+//
+// 3. Build your project:
+//
+//	CGO_ENABLED=1 go build
 package llama
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../llama.cpp/include -I${SRCDIR}/../llama.cpp/ggml/include -DNDEBUG -O3
-#cgo CXXFLAGS: -I${SRCDIR}/../llama.cpp/include -I${SRCDIR}/../llama.cpp/ggml/include -DNDEBUG -O3
-#cgo LDFLAGS: ${SRCDIR}/../llama.cpp/build/src/libllama.a ${SRCDIR}/../llama.cpp/build/ggml/src/libggml.a ${SRCDIR}/../llama.cpp/build/ggml/src/libggml-base.a ${SRCDIR}/../llama.cpp/build/ggml/src/libggml-cpu.a -lstdc++ -lm -lpthread -lgomp
+#cgo CFLAGS: -I${LLAMA_CPP_PATH}/include -I${LLAMA_CPP_PATH}/ggml/include -DNDEBUG -O3
+#cgo CXXFLAGS: -I${LLAMA_CPP_PATH}/include -I${LLAMA_CPP_PATH}/ggml/include -DNDEBUG -O3
+#cgo LDFLAGS: ${LLAMA_CPP_PATH}/build/src/libllama.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml-base.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml-cpu.a -lstdc++ -lm -lpthread -lgomp
 
 #include "llama.h"
 #include <stdlib.h>
