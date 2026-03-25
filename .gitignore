@@ -67,12 +67,12 @@ Build/
 out/
 
 # ============================================
-# llama.cpp specific (source is git submodule)
+# llama.cpp specific (fetched by go:generate)
 # ============================================
-# Only ignore build artifacts, not the submodule source
-llama.cpp/build/
-llama.cpp/CMakeCache.txt
-llama.cpp/CMakeFiles/
+# Keep the stub header, ignore fetched source and build artifacts
+llama.cpp/*
+!llama.cpp/include/
+!llama.cpp/include/llama.h
 *.ggml
 
 # ============================================

@@ -1,7 +1,10 @@
 // Package llama provides CGo bindings to llama.cpp.
-// llama.cpp is included as a git submodule in this repository.
-// Run `git submodule update --init --recursive` to fetch the submodule.
-// Run `go generate ./...` in the llama package to build the static libraries.
+//
+// Before building, you must run go:generate to fetch and build llama.cpp:
+//
+//	CGO_ENABLED=1 go generate github.com/ahati/reasoning-summarizer/llama
+//
+// This will clone llama.cpp from GitHub and build the static libraries.
 package llama
 
 /*
