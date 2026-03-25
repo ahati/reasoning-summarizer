@@ -9,9 +9,11 @@
 //	cmake .. -DBUILD_SHARED_LIBS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF
 //	make -j$(nproc) llama ggml ggml-base ggml-cpu
 //
-// 2. Set LLAMA_CPP_PATH environment variable:
+// 2. Set CGO flags to point to llama.cpp (replace /path/to/llama.cpp):
 //
-//	export LLAMA_CPP_PATH=/path/to/llama.cpp
+//	export CGO_CFLAGS="-I/path/to/llama.cpp/include -I/path/to/llama.cpp/ggml/include"
+//	export CGO_CXXFLAGS="-I/path/to/llama.cpp/include -I/path/to/llama.cpp/ggml/include"
+//	export CGO_LDFLAGS="/path/to/llama.cpp/build/src/libllama.a /path/to/llama.cpp/build/ggml/src/libggml.a /path/to/llama.cpp/build/ggml/src/libggml-base.a /path/to/llama.cpp/build/ggml/src/libggml-cpu.a -lstdc++ -lm -lpthread -lgomp"
 //
 // 3. Build your project:
 //
@@ -19,10 +21,6 @@
 package llama
 
 /*
-#cgo CFLAGS: -I${LLAMA_CPP_PATH}/include -I${LLAMA_CPP_PATH}/ggml/include -DNDEBUG -O3
-#cgo CXXFLAGS: -I${LLAMA_CPP_PATH}/include -I${LLAMA_CPP_PATH}/ggml/include -DNDEBUG -O3
-#cgo LDFLAGS: ${LLAMA_CPP_PATH}/build/src/libllama.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml-base.a ${LLAMA_CPP_PATH}/build/ggml/src/libggml-cpu.a -lstdc++ -lm -lpthread -lgomp
-
 #include "llama.h"
 #include <stdlib.h>
 */
