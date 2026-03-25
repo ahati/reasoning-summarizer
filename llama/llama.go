@@ -1,5 +1,7 @@
 // Package llama provides CGo bindings to llama.cpp.
-// The llama.cpp library is built automatically from the bundled source.
+// llama.cpp is included as a git submodule in this repository.
+// Run `git submodule update --init --recursive` to fetch the submodule.
+// Run `go generate ./...` in the llama package to build the static libraries.
 package llama
 
 /*
