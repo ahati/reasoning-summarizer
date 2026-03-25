@@ -4,7 +4,8 @@ A Go package for summarizing LLM reasoning/thinking processes using llama.cpp wi
 
 ## Features
 
-- **Zero-config llama.cpp**: Bundled as a git submodule with static linking
+- **Automatic dependency fetching**: llama.cpp is fetched and built via `go generate`
+- **No submodules**: Works when cloned directly from GitHub without `--recursive`
 - **Qwen 3.5 support**: Optimized for Qwen 3.5 small models (0.8B)
 - **Aggressive compression**: Outputs 3-5 word summaries with ~95% compression
 - **JSON-based extraction**: Reliable output format handling Qwen's thinking tokens
@@ -18,20 +19,23 @@ A Go package for summarizing LLM reasoning/thinking processes using llama.cpp wi
 - C/C++ compiler (gcc or clang)
 - CMake
 - Make
+- Git (for fetching llama.cpp)
 
 ## Installation
 
 ```bash
-# Clone with submodules
-git clone --recursive https://github.com/ahati/reasoning-summarizer.git
+# Clone the repository (no --recursive needed)
+git clone https://github.com/ahati/reasoning-summarizer.git
 cd reasoning-summarizer
 
-# Build llama.cpp and Go binary
-make
+# Fetch and build llama.cpp dependencies
+go generate ./...
 
-# Or build separately
-make llama  # Build llama.cpp static libraries
-make build  # Build Go package
+# Build the Go binary
+go build ./cmd/reasoning-summarizer
+
+# Or use make for everything
+make
 ```
 
 ## Quick Start
@@ -179,21 +183,24 @@ func (ss *StreamingSummarizer) StreamWithReasoning(ctx context.Context, r io.Rea
 
 ```
 reasoning-summarizer/
-├── llama/llama.go              # CGo bindings to llama.cpp
+├── llama/
+│   ├── llama.go              # CGo bindings to llama.cpp
+│   ├── generate.go           # go:generate directive
+│   └── fetch-llama.sh        # Script to fetch llama.cpp
 ├── summarizer/
-│   ├── summarizer.go           # Core summarization API
-│   ├── streaming.go            # Streaming support
-│   └── summarizer_test.go      # Unit tests
+│   ├── summarizer.go         # Core summarization API
+│   ├── streaming.go          # Streaming support
+│   └── summarizer_test.go    # Unit tests
 ├── cmd/reasoning-summarizer/
-│   └── main.go                 # CLI application
-├── llama.cpp/                  # Git submodule
-│   ├── include/                # Header files
-│   └── build/                  # Static libraries
-├── models/                     # GGUF models (gitignored)
+│   └── main.go               # CLI application
+├── llama.cpp/                # Fetched by go:generate
+│   ├── include/              # Header files
+│   └── build/                # Static libraries
+├── models/                   # GGUF models (gitignored)
 ├── go.mod
 ├── Makefile
 ├── README.md
-└── AGENTS.md                   # Contributor guide
+└── AGENTS.md                 # Contributor guide
 ```
 
 ## Getting Models
@@ -215,6 +222,23 @@ make model
 2. **Thinking token handling**: Qwen 3.5 outputs thinking tokens (Tibetan chars) which are stripped
 3. **Fallback safety**: If summary exceeds input length, original is returned
 4. **Memory management**: KV cache cleared between runs for multiple summarizations
+
+## Dependency Management
+
+llama.cpp is fetched automatically during `go generate`:
+
+```bash
+# Fetch and build llama.cpp
+go generate ./...
+
+# Or fetch a specific version
+LLAMA_CPP_VERSION=b8508 go generate ./...
+
+# Environment variables
+LLAMA_CPP_VERSION  - llama.cpp version/commit/tag (default: b8508)
+LLAMA_CPP_REPO     - Git repository URL (default: https://github.com/ggml-org/llama.cpp.git)
+CMAKE_BUILD_TYPE   - Build type (default: Release)
+```
 
 ## Testing
 

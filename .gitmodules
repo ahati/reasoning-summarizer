@@ -1,3 +1,1 @@
-[submodule "llama.cpp"]
-	path = llama.cpp
-	url = https://github.com/ggml-org/llama.cpp
+# Submodules removed - dependencies are fetched via go:generate

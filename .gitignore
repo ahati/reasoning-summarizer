@@ -67,9 +67,9 @@ Build/
 out/
 
 # ============================================
-# llama.cpp specific
+# llama.cpp specific (fetched via go:generate)
 # ============================================
-llama.cpp/build/
+llama.cpp/
 *.ggml
 
 # ============================================

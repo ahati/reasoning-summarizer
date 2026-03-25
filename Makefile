@@ -1,7 +1,7 @@
 # Makefile for reasoning-summarizer
-# Builds llama.cpp from source automatically
+# Dependencies are fetched automatically via go:generate
 
-.PHONY: all build clean test install llama static-libs
+.PHONY: all build clean test install generate static-libs
 
 # Paths
 LLAMA_DIR := llama.cpp
@@ -15,33 +15,23 @@ STATIC_LIBS := $(LLAMA_BUILD)/src/libllama.a \
                $(LLAMA_BUILD)/ggml/src/libggml-base.a \
                $(LLAMA_BUILD)/ggml/src/libggml-cpu.a
 
-# Default: build everything
+# Default: generate dependencies then build
 all: $(BINARY)
+
+# Generate llama.cpp (fetch and build if needed)
+generate:
+	go generate ./...
 
 # Build the Go binary (llama.cpp must be built first)
 $(BINARY): $(STATIC_LIBS)
 	go build -o $(BINARY) ./cmd/reasoning-summarizer
 
-# Build llama.cpp static libraries
-$(STATIC_LIBS): $(LLAMA_DIR)/CMakeLists.txt
-	@echo "Building llama.cpp static libraries..."
-	mkdir -p $(LLAMA_BUILD)
-	cd $(LLAMA_BUILD) && cmake .. \
-		-DBUILD_SHARED_LIBS=OFF \
-		-DLLAMA_BUILD_EXAMPLES=OFF \
-		-DLLAMA_BUILD_SERVER=OFF \
-		-DCMAKE_BUILD_TYPE=Release
-	$(MAKE) -C $(LLAMA_BUILD) llama ggml ggml-base ggml-cpu
-
-# Ensure llama.cpp source exists (via git submodule)
-$(LLAMA_DIR)/CMakeLists.txt:
-	@echo "Initializing llama.cpp submodule..."
-	git submodule update --init --recursive
+# Build llama.cpp static libraries (fetched via go generate if needed)
+$(STATIC_LIBS):
+	@echo "Fetching and building llama.cpp..."
+	go generate ./llama
 
 # Build only llama.cpp (for package import preparation)
-llama: $(STATIC_LIBS)
-
-# Alias for static libraries
 static-libs: $(STATIC_LIBS)
 
 # Build the Go package (for library use)
@@ -62,7 +52,7 @@ clean:
 	rm -rf $(LLAMA_BUILD)
 	rm -rf $(BUILD_DIR)
 
-# Deep clean (including submodule)
+# Deep clean (including fetched llama.cpp)
 deep-clean: clean
 	rm -rf $(LLAMA_DIR)
 
@@ -83,10 +73,16 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  all          Build everything (default)"
+	@echo "  generate     Fetch and build llama.cpp (run this first)"
 	@echo "  build        Build the Go package"
-	@echo "  llama        Build only llama.cpp static libraries"
+	@echo "  static-libs  Build only llama.cpp static libraries"
 	@echo "  test         Run tests"
 	@echo "  install      Install binary to /usr/local/bin"
 	@echo "  clean        Remove build artifacts"
+	@echo "  deep-clean   Remove build artifacts and fetched llama.cpp"
 	@echo "  model        Download test model"
 	@echo "  demo         Run demo with test model"
+	@echo ""
+	@echo "Quick start:"
+	@echo "  go generate ./...   # Fetch and build llama.cpp"
+	@echo "  go build ./...      # Build the package"
